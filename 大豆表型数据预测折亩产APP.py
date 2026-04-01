@@ -69,7 +69,7 @@ except:
     st.error("模型文件未找到，请检查路径")
     st.stop()
 
-# ===================== 特征配置 =====================
+# ===================== 特征中英文独立映射 =====================
 feature_list = [
     "株高", "结荚高度", "主茎节数", "有效分枝", "有效荚数", "无效荚数",
     "单株生物产量", "单株粒数", "单株粒重", "百粒重计算", "每荚粒数",
@@ -150,7 +150,7 @@ if menu == "产量预测":
         </div>
         """, unsafe_allow_html=True)
 
-        # ========== 第一行：整行显示 SHAP 力图 ==========
+        # ========== 第一行：整行显示 SHAP 力图（超扁，宽高比≈6:1～8:1）==========
         st.markdown("<div class='card'><div class='section-title'>SHAP 力图解释</div>", unsafe_allow_html=True)
         shap.force_plot(
             base_value=d['base'],
@@ -158,7 +158,7 @@ if menu == "产量预测":
             features=d['input'].iloc[0].values,
             feature_names=d['en_feats'],
             matplotlib=True,
-            figsize=(24, 8)  # 超宽画布，绝不重叠
+            figsize=(24, 3.5)  # ✅ 宽24，高3.5 → 宽高比≈6.8:1（非常扁）
         )
         st.pyplot(plt.gcf())
         st.caption("红色：正向增产 ｜ 蓝色：负向减产")
