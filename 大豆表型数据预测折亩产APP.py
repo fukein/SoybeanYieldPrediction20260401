@@ -76,25 +76,25 @@ feature_list = [
     "经济系数", "粒形", "脐色", "籽粒光泽", "生育天数", "水分", "蛋白", "脂肪", "抗倒"
 ]
 
-# SHAP 专用：纯英文
+# ====================== 核心修改：极简英文名称（超短，不重叠）======================
 en_names = [
-    "PlantH","PodH","Nodes","Brans","PodNum","Unpod",
-    "BioYld","SeedNum","SeedWt","100Wt","SeedPod",
-    "HarvIdx","Shape","HilumC","SeedGl","GrowDay","Moist","Protein","Oil","Lodg"
+    "PH","PHgt","Nod","Br","Pod","UPod",
+    "Bio","SN","SW","100W","SPod",
+    "HI","Sh","Hc","Gls","Day","Mo","Pro","Fat","Lod"
 ]
 
-# 表格专用：英文(中文)
+# 表格专用：极简英文(中文)
 table_names = [
-    "PlantH(株高)","PodH(结荚高度)","Nodes(主茎节数)","Brans(有效分枝)","PodNum(有效荚数)","Unpod(无效荚数)",
-    "BioYld(单株生物产量)","SeedNum(单株粒数)","SeedWt(单株粒重)","100Wt(百粒重计算)","SeedPod(每荚粒数)",
-    "HarvIdx(经济系数)","Shape(粒形)","HilumC(脐色)","SeedGl(籽粒光泽)","GrowDay(生育天数)","Moist(水分)","Protein(蛋白)","Oil(脂肪)","Lodg(抗倒)"
+    "PH(株高)","PHgt(结荚高度)","Nod(主茎节数)","Br(有效分枝)","Pod(有效荚数)","UPod(无效荚数)",
+    "Bio(单株生物产量)","SN(单株粒数)","SW(单株粒重)","100W(百粒重)","SPod(每荚粒数)",
+    "HI(经济系数)","Sh(粒形)","Hc(脐色)","Gls(光泽)","Day(生育天)","Mo(水分)","Pro(蛋白)","Fat(脂肪)","Lod(抗倒)"
 ]
 
 # ===================== 菜单1：产量预测 =====================
 if menu == "产量预测":
     st.title("🌱 大豆表型数据产量预测系统")
 
-    # 输入面板：无上限，仅 ≥0
+    # 输入面板
     st.markdown("<div class='card'><div class='section-title'>表型特征输入</div>", unsafe_allow_html=True)
     cols = st.columns(4)
     input_values = {}
@@ -124,8 +124,8 @@ if menu == "产量预测":
                 "shap": sv[0],
                 "base": ev,
                 "feats": feature_list,
-                "en_feats": en_names,    # 绘图专用：纯英文
-                "table_feats": table_names # 表格专用：英文(中文)
+                "en_feats": en_names,
+                "table_feats": table_names
             }
 
     # 展示结果
@@ -139,33 +139,34 @@ if menu == "产量预测":
         </div>
         """, unsafe_allow_html=True)
 
-        col1, col2 = st.columns(2)
+        # ====================== 布局比例：力图 65%，表格 35% ======================
+        col_plot, col_table = st.columns([65, 35])
 
-        with col1:
+        with col_table:
             st.markdown("<div class='card'><div class='section-title'>输入特征</div>", unsafe_allow_html=True)
             show_df = pd.DataFrame({
-                "特征": d['table_feats'],  # 表格用：英文(中文)
+                "特征": d['table_feats'],
                 "数值": d['input'].iloc[0].values
             })
             st.dataframe(show_df, use_container_width=True, height=500)
             st.markdown("</div>", unsafe_allow_html=True)
 
-        with col2:
+        with col_plot:
             st.markdown("<div class='card'><div class='section-title'>SHAP 力图解释</div>", unsafe_allow_html=True)
-            # 绘图：纯英文，独立独立独立！
+            # ====================== 力图画布拉长，防止文字重叠 ======================
             shap.force_plot(
                 base_value=d['base'],
                 shap_values=d['shap'],
                 features=d['input'].iloc[0].values,
-                feature_names=d['en_feats'], # 纯英文
+                feature_names=d['en_feats'],
                 matplotlib=True,
-                figsize=(12,6)
+                figsize=(16, 7)  # 大幅加宽画布，彻底解决重叠
             )
             st.pyplot(plt.gcf())
             st.caption("红色：正向增产 ｜ 蓝色：负向减产")
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # 特征贡献度（表格专用英文+中文）
+        # 特征贡献度
         st.markdown("<div class='card'><div class='section-title'>特征贡献度排序</div>", unsafe_allow_html=True)
         imp_df = pd.DataFrame({
             "特征": d['table_feats'],
@@ -181,6 +182,6 @@ elif menu == "关于系统":
     st.title("ℹ️ 系统说明")
     st.markdown("### 基于AutoML的大豆产量预测模型")
     st.markdown("- 模型：XGBoost")
-    st.markdown("- SHAP力图：纯英文显示")
-    st.markdown("- 表格：英文(中文)对照")
+    st.markdown("- SHAP力图：极简英文")
+    st.markdown("- 表格：极简英文(中文)")
     st.markdown("- 用途：大豆表型性状→折亩产预测、育种辅助决策")
