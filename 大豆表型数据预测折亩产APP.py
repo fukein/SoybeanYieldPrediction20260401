@@ -72,59 +72,51 @@ except:
     st.error("模型文件未找到，请检查路径")
     st.stop()
 
-# ===================== 特征：中文 + 英文映射（画图/表格用英文+中文备注） =====================
+# ===================== 特征：纯英文名称（SHAP专用） =====================
 feature_cn_en = {
-    "株高": "PlantH (株高)",
-    "结荚高度": "PodH (结荚高度)",
-    "主茎节数": "Nodes (主茎节数)",
-    "有效分枝": "Brans (有效分枝)",
-    "有效荚数": "PodNum (有效荚数)",
-    "无效荚数": "Unpod (无效荚数)",
-    "单株生物产量": "BioYld (单株生物产量)",
-    "单株粒数": "SeedNum (单株粒数)",
-    "单株粒重": "SeedWt (单株粒重)",
-    "百粒重计算": "100Wt (百粒重)",
-    "每荚粒数": "SeedPod (每荚粒数)",
-    "经济系数": "HarvIdx (经济系数)",
-    "粒形": "Shape (粒形)",
-    "脐色": "HilumC (脐色)",
-    "籽粒光泽": "SeedGl (籽粒光泽)",
-    "生育天数": "GrowDay (生育天数)",
-    "水分": "Moist (水分)",
-    "蛋白": "Protein (蛋白)",
-    "脂肪": "Oil (脂肪)",
-    "抗倒": "Lodg (抗倒)"
+    "株高": "PlantH",
+    "结荚高度": "PodH",
+    "主茎节数": "Nodes",
+    "有效分枝": "Brans",
+    "有效荚数": "PodNum",
+    "无效荚数": "Unpod",
+    "单株生物产量": "BioYld",
+    "单株粒数": "SeedNum",
+    "单株粒重": "SeedWt",
+    "百粒重计算": "100Wt",
+    "每荚粒数": "SeedPod",
+    "经济系数": "HarvIdx",
+    "粒形": "Shape",
+    "脐色": "HilumC",
+    "籽粒光泽": "SeedGl",
+    "生育天数": "GrowDay",
+    "水分": "Moist",
+    "蛋白": "Protein",
+    "脂肪": "Oil",
+    "抗倒": "Lodg"
 }
 
 feature_list = list(feature_cn_en.keys())
 en_feature_list = list(feature_cn_en.values())
 
-feature_ranges = {
-    "株高": (50.0, 150.0, 95.0), "结荚高度": (10.0, 40.0, 22.0),
-    "主茎节数": (8.0, 25.0, 16.0), "有效分枝": (0.0, 5.0, 2.0),
-    "有效荚数": (10.0, 80.0, 42.0), "无效荚数": (0.0, 20.0, 5.0),
-    "单株生物产量": (20.0, 150.0, 75.0), "单株粒数": (20.0, 200.0, 90.0),
-    "单株粒重": (5.0, 30.0, 15.0), "百粒重计算": (10.0, 30.0, 18.0),
-    "每荚粒数": (1.5, 3.5, 2.3), "经济系数": (0.2, 0.6, 0.38),
-    "粒形": (1.0, 3.0, 2.0), "脐色": (1.0, 4.0, 2.0), "籽粒光泽": (1.0, 3.0, 2.0),
-    "生育天数": (90.0, 130.0, 115.0), "水分": (8.0, 15.0, 12.5),
-    "蛋白": (35.0, 50.0, 41.0), "脂肪": (15.0, 24.0, 20.0),
-    "抗倒": (1.0, 5.0, 3.0)
-}
-
 # ===================== 菜单1：产量预测 =====================
 if menu == "产量预测":
     st.title("🌱 大豆表型数据产量预测系统")
 
-    # 输入面板（保留中文）
+    # 输入面板：无范围限制，仅要求 > 0
     st.markdown("<div class='card'><div class='section-title'>表型特征输入</div>", unsafe_allow_html=True)
     cols = st.columns(4)
     input_values = {}
 
     for i, feat in enumerate(feature_list):
         with cols[i % 4]:
-            min_v, max_v, def_v = feature_ranges[feat]
-            input_values[feat] = st.number_input(feat, min_value=min_v, max_value=max_v, value=def_v, step=0.1)
+            # 无最大值限制，最小值=0，默认值保留原合理值
+            input_values[feat] = st.number_input(
+                feat, 
+                min_value=0.0, 
+                value=10.0 if feat in ["粒形","脐色","籽粒光泽","抗倒"] else 50.0, 
+                step=0.1
+            )
     st.markdown("</div>", unsafe_allow_html=True)
 
     # 预测按钮
@@ -165,16 +157,15 @@ if menu == "产量预测":
         col1, col2 = st.columns(2)
 
         with col1:
-            st.markdown("<div class='card'><div class='section-title'>输入特征（英文+中文）</div>", unsafe_allow_html=True)
+            st.markdown("<div class='card'><div class='section-title'>输入特征</div>", unsafe_allow_html=True)
             show_df = d['input'].T.reset_index()
             show_df.columns = ['特征', '数值']
-            show_df['特征'] = show_df['特征'].map(feature_cn_en)  # 替换为英文+中文
             st.dataframe(show_df, use_container_width=True, height=500)
             st.markdown("</div>", unsafe_allow_html=True)
 
         with col2:
             st.markdown("<div class='card'><div class='section-title'>SHAP 力图解释</div>", unsafe_allow_html=True)
-            # SHAP绘图使用英文名称
+            # 纯英文SHAP力图，无任何中文
             shap.force_plot(
                 base_value=d['base'],
                 shap_values=d['shap'],
@@ -187,7 +178,7 @@ if menu == "产量预测":
             st.caption("红色：正向增产 ｜ 蓝色：负向减产")
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # 特征重要性（英文+中文）
+        # 特征重要性（纯英文）
         st.markdown("<div class='card'><div class='section-title'>特征贡献度排序</div>", unsafe_allow_html=True)
         imp_df = pd.DataFrame({
             "特征": d['en_feats'],
@@ -202,5 +193,5 @@ elif menu == "关于系统":
     st.title("ℹ️ 系统说明")
     st.markdown("### 基于AutoML的大豆产量预测模型")
     st.markdown("- 模型：XGBoost")
-    st.markdown("- 解释方法：SHAP力图（英文显示，括号标注中文）")
+    st.markdown("- 解释方法：SHAP力图（纯英文）")
     st.markdown("- 用途：大豆表型性状→折亩产预测、育种辅助决策")
