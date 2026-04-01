@@ -69,47 +69,59 @@ except:
     st.error("模型文件未找到，请检查路径")
     st.stop()
 
-# ===================== 特征中英文独立映射 =====================
+# ===================== 特征配置 =====================
 feature_list = [
     "株高", "结荚高度", "主茎节数", "有效分枝", "有效荚数", "无效荚数",
     "单株生物产量", "单株粒数", "单株粒重", "百粒重计算", "每荚粒数",
     "经济系数", "粒形", "脐色", "籽粒光泽", "生育天数", "水分", "蛋白", "脂肪", "抗倒"
 ]
 
-# 极简英文名称
+# 极简英文（SHAP图专用）
 en_names = [
     "PH","PHgt","Nod","Br","Pod","UPod",
     "Bio","SN","SW","100W","SPod",
     "HI","Sh","Hc","Gls","Day","Mo","Pro","Fat","Lod"
 ]
 
-# 表格专用：英文(中文)
+# 表格显示（英文+中文）
 table_names = [
     "PH(株高)","PHgt(结荚高度)","Nod(主茎节数)","Br(有效分枝)","Pod(有效荚数)","UPod(无效荚数)",
     "Bio(单株生物产量)","SN(单株粒数)","SW(单株粒重)","100W(百粒重)","SPod(每荚粒数)",
     "HI(经济系数)","Sh(粒形)","Hc(脐色)","Gls(光泽)","Day(生育天)","Mo(水分)","Pro(蛋白)","Fat(脂肪)","Lod(抗倒)"
 ]
 
+# 合理默认初始值（行业常用均值，无上限）
+default_values = [
+    95.0, 22.0, 16.0, 2.0, 42.0, 5.0,
+    75.0, 90.0, 15.0, 18.0, 2.3,
+    0.38, 2.0, 2.0, 2.0, 115.0, 12.5, 41.0, 20.0, 3.0
+]
+
 # ===================== 菜单1：产量预测 =====================
 if menu == "产量预测":
     st.title("🌱 大豆表型数据产量预测系统")
 
-    # 输入面板
+    # 输入面板（无上限，仅≥0，带合理默认值）
     st.markdown("<div class='card'><div class='section-title'>表型特征输入</div>", unsafe_allow_html=True)
     cols = st.columns(4)
     input_values = {}
 
     for i, feat in enumerate(feature_list):
         with cols[i % 4]:
-            input_values[feat] = st.number_input(feat, min_value=0.0, value=0.0, step=0.1)
+            input_values[feat] = st.number_input(
+                feat,
+                min_value=0.0,
+                value=default_values[i],
+                step=0.1
+            )
     st.markdown("</div>", unsafe_allow_html=True)
 
     # 预测按钮
-    _, c, _ = st.columns([1,1,1])
+    _, c, _ = st.columns([1, 1, 1])
     with c:
         run = st.button("🔍 预测产量", use_container_width=True)
 
-    # 预测
+    # 预测计算
     if run:
         with st.spinner("正在预测..."):
             input_df = pd.DataFrame([input_values])
@@ -119,11 +131,10 @@ if menu == "产量预测":
             ev = explainer.expected_value
 
             st.session_state.data = {
-                "yield": round(pred,2),
+                "yield": round(pred, 2),
                 "input": input_df,
                 "shap": sv[0],
                 "base": ev,
-                "feats": feature_list,
                 "en_feats": en_names,
                 "table_feats": table_names
             }
@@ -139,7 +150,7 @@ if menu == "产量预测":
         </div>
         """, unsafe_allow_html=True)
 
-        # ===================== 第一行：整行放 SHAP 力图 =====================
+        # ========== 第一行：整行显示 SHAP 力图 ==========
         st.markdown("<div class='card'><div class='section-title'>SHAP 力图解释</div>", unsafe_allow_html=True)
         shap.force_plot(
             base_value=d['base'],
@@ -147,13 +158,13 @@ if menu == "产量预测":
             features=d['input'].iloc[0].values,
             feature_names=d['en_feats'],
             matplotlib=True,
-            figsize=(22, 8)  # 超级宽，彻底不重叠
+            figsize=(24, 8)  # 超宽画布，绝不重叠
         )
         st.pyplot(plt.gcf())
         st.caption("红色：正向增产 ｜ 蓝色：负向减产")
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # ===================== 第二行：整行放 输入特征表格 =====================
+        # ========== 第二行：整行显示 输入特征 ==========
         st.markdown("<div class='card'><div class='section-title'>输入特征</div>", unsafe_allow_html=True)
         show_df = pd.DataFrame({
             "特征": d['table_feats'],
@@ -162,7 +173,7 @@ if menu == "产量预测":
         st.dataframe(show_df, use_container_width=True, height=500)
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # 特征贡献度
+        # ========== 第三行：特征贡献度 ==========
         st.markdown("<div class='card'><div class='section-title'>特征贡献度排序</div>", unsafe_allow_html=True)
         imp_df = pd.DataFrame({
             "特征": d['table_feats'],
