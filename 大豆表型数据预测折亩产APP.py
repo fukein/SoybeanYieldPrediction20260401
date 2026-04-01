@@ -158,7 +158,7 @@ if menu == "产量预测":
             features=d['input'].iloc[0].values,
             feature_names=d['en_feats'],
             matplotlib=True,
-            figsize=(24, 3.5)  # ✅ 宽24，高3.5 → 宽高比≈6.8:1（非常扁）
+            figsize=(30, 3)  # ✅ 宽30，高3 → 宽高比≈10:1（非常扁）
         )
         st.pyplot(plt.gcf())
         st.caption("红色：正向增产 ｜ 蓝色：负向减产")
